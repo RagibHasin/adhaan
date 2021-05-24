@@ -30,53 +30,68 @@ mod tests {
     use chrono::prelude::*;
 
     #[test]
-    fn calculate_prayer_times() {
+    fn calculate_prayer_times_raleigh_usa() {
         let local_date = NaiveDate::from_ymd(2015, 7, 12);
         let params = Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
         let coordinates = Coordinates::new(35.7750, -78.6336);
         let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
 
         assert_eq!(
-            schedule
-                .time_of(Prayer::Fajr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "8:42 AM"
+            schedule.time_of(Prayer::Fajr),
+            Utc.ymd(2015, 7, 12).and_hms(8, 42, 0),
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Sunrise)
-                .format("%-l:%M %p")
-                .to_string(),
-            "10:08 AM"
+            schedule.time_of(Prayer::Sunrise),
+            Utc.ymd(2015, 7, 12).and_hms(10, 7, 0),
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Dhuhr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "5:21 PM"
+            schedule.time_of(Prayer::Dhuhr),
+            Utc.ymd(2015, 7, 12).and_hms(17, 21, 0),
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Asr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "10:22 PM"
+            schedule.time_of(Prayer::Asr),
+            Utc.ymd(2015, 7, 12).and_hms(22, 22, 0),
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Maghrib)
-                .format("%-l:%M %p")
-                .to_string(),
-            "12:32 AM"
+            schedule.time_of(Prayer::Maghrib),
+            Utc.ymd(2015, 7, 13).and_hms(0, 32, 0),
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Isha)
-                .format("%-l:%M %p")
-                .to_string(),
-            "1:57 AM"
+            schedule.time_of(Prayer::Isha),
+            Utc.ymd(2015, 7, 13).and_hms(1, 57, 0),
+        );
+    }
+
+    #[test]
+    fn calculate_prayer_times_rajshahi_bd() {
+        let local_date = NaiveDate::from_ymd(2021, 5, 24);
+        let params = Parameters::new(&prominent_methods::Karachi, Madhhab::Hanafi);
+        let coordinates = Coordinates::new(24.383144, 88.583183);
+        let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
+
+        assert_eq!(
+            schedule.time_of(Prayer::Fajr),
+            Utc.ymd(2021, 5, 23).and_hms(21, 53, 0),
+        );
+        assert_eq!(
+            schedule.time_of(Prayer::Sunrise),
+            Utc.ymd(2021, 5, 23).and_hms(23, 18, 0),
+        );
+        assert_eq!(
+            schedule.time_of(Prayer::Dhuhr),
+            Utc.ymd(2021, 5, 24).and_hms(6, 4, 0),
+        );
+        assert_eq!(
+            schedule.time_of(Prayer::Asr),
+            Utc.ymd(2021, 5, 24).and_hms(10, 43, 0),
+        );
+        assert_eq!(
+            schedule.time_of(Prayer::Maghrib),
+            Utc.ymd(2021, 5, 24).and_hms(12, 46, 0),
+        );
+        assert_eq!(
+            schedule.time_of(Prayer::Isha),
+            Utc.ymd(2021, 5, 24).and_hms(14, 12, 0),
         );
     }
 
@@ -93,18 +108,8 @@ mod tests {
         // Middle of Night: 2015-07-13T04:38:00Z
         // Last Third     : 2015-07-13T05:59:00Z
         assert_eq!(
-            schedule
-                .time_of(Prayer::Maghrib)
-                .format("%-l:%M %p")
-                .to_string(),
-            "12:32 AM"
-        );
-        assert_eq!(
-            schedule
-                .time_of(Prayer::Qiyam)
-                .format("%-l:%M %p")
-                .to_string(),
-            "5:59 AM"
+            schedule.time_of(Prayer::Qiyam),
+            Utc.ymd(2015, 7, 13).and_hms(5, 59, 0)
         );
     }
 }

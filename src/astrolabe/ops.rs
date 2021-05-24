@@ -270,12 +270,30 @@ pub fn interpolate_angles(
 }
 
 /// The Julian Day for the given Gregorian date.
-pub fn julian_day(date: NaiveDate, hours: f64) -> f64 {
-    julian_day_ymdh(date.year(), date.month(), date.day(), hours)
+pub fn julian_day(datetime: NaiveDateTime) -> f64 {
+    _julian_day_ymdh(
+        datetime.year(),
+        datetime.month(),
+        datetime.day(),
+        datetime.num_seconds_from_midnight() as f64 / 86400.0,
+    )
 }
 
 /// The Julian Day for the given Gregorian date.
-pub fn julian_day_ymdh(year: i32, month: u32, day: u32, hours: f64) -> f64 {
+pub fn __julian_day(datetime: NaiveDateTime) -> f64 {
+    let year = datetime.year() as i64;
+    let month = datetime.month() as i64;
+    let day = datetime.day() as i64;
+    ((1461 * (year + 4800 + (month - 14) / 12)) / 4
+        + (367 * (month - 2 - 12 * ((month - 14) / 12))) / 12
+        - (3 * ((year + 4900 + (month - 14) / 12) / 100)) / 4
+        + day
+        - 32075) as f64
+        + datetime.num_seconds_from_midnight() as f64 / 86400.0
+}
+
+/// The Julian Day for the given Gregorian date.
+fn _julian_day_ymdh(year: i32, month: u32, day: u32, fractional_day: f64) -> f64 {
     // Equation from Astronomical Algorithms page 60
 
     let year = if month > 2 { year } else { year - 1 };
@@ -287,7 +305,7 @@ pub fn julian_day_ymdh(year: i32, month: u32, day: u32, hours: f64) -> f64 {
     let i0 = (1461 * (year + 4716)) / 4;
     let i1 = (306 * (month + 1)) / 10;
 
-    (i0 + (i1 + day) as i32 + b) as f64 + hours / 24.0 - 1524.5
+    (i0 + (i1 + day) as i32 + b) as f64 + fractional_day - 1524.5
 }
 
 /// Julian century from the epoch.
@@ -304,14 +322,14 @@ mod tests {
 
     #[test]
     fn calculate_julian_day() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
 
         assert_abs_diff_eq!(julian_day, 2448908.5, epsilon = 1e-10);
     }
 
     #[test]
     fn calculate_julian_century() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
 
         assert_abs_diff_eq!(julian_century, -0.072183436002737855, epsilon = 1e-10);
@@ -319,7 +337,7 @@ mod tests {
 
     #[test]
     fn calculate_mean_solar_longitude() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_longitude = mean_solar_longitude(julian_century);
 
@@ -332,7 +350,7 @@ mod tests {
 
     #[test]
     fn calculate_apparent_solar_longitude() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_longitude = mean_solar_longitude(julian_century);
         let apparent_solar_longitude =
@@ -347,7 +365,7 @@ mod tests {
 
     #[test]
     fn calculate_mean_obliquity_of_the_ecliptic() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_obliq_of_ecliptic = mean_obliquity_of_the_ecliptic(julian_century);
 
@@ -360,7 +378,7 @@ mod tests {
 
     #[test]
     fn calculate_apparent_obliquity_of_the_ecliptic() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_obliq_of_ecliptic = mean_obliquity_of_the_ecliptic(julian_century);
         let apparent_obliq_of_ecliptic =
@@ -375,7 +393,7 @@ mod tests {
 
     #[test]
     fn calculate_mean_solar_anomaly() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_anomaly = mean_solar_anomaly(julian_century);
 
@@ -388,7 +406,7 @@ mod tests {
 
     #[test]
     fn calculate_solar_equation_of_the_center() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_anomaly = mean_solar_anomaly(julian_century);
         let solar_equation_of_center =
@@ -403,7 +421,7 @@ mod tests {
 
     #[test]
     fn calculate_mean_lunar_longitude() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_lunar_longitude = mean_lunar_longitude(julian_century);
 
@@ -416,7 +434,7 @@ mod tests {
 
     #[test]
     fn calculate_acending_lunar_node_longitude() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let ascending_lunar_node = ascending_lunar_node_longitude(julian_century);
 
@@ -429,7 +447,7 @@ mod tests {
 
     #[test]
     fn calculate_mean_sidereal_time() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_sidereal_time = mean_sidereal_time(julian_century);
 
@@ -442,7 +460,7 @@ mod tests {
 
     #[test]
     fn calculate_nutation_longitude() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_longitude = mean_solar_longitude(julian_century);
         let mean_lunar_longitude = mean_lunar_longitude(julian_century);
@@ -458,7 +476,7 @@ mod tests {
 
     #[test]
     fn calculate_nutation_in_obliquity() {
-        let julian_day = julian_day_ymdh(1992, 10, 13, 0.0);
+        let julian_day = _julian_day_ymdh(1992, 10, 13, 0.0);
         let julian_century = julian_century(julian_day);
         let mean_solar_longitude = mean_solar_longitude(julian_century);
         let mean_lunar_longitude = mean_lunar_longitude(julian_century);

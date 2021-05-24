@@ -3,7 +3,7 @@
 //! This module provide the main objects that are used for calculating
 //! the prayer times.
 
-use chrono::{prelude::*, Duration, DurationRound};
+use chrono::{prelude::*, Duration};
 
 use crate::{
     astrolabe::{solar::SolarTime, unit::Coordinates},
@@ -101,12 +101,8 @@ impl PrayerTimes {
         ) + Duration::minutes(parameters.time_adjustments(Prayer::Fajr));
 
         let next_night_short = fajr_tomorrow - maghrib;
-        let middle_of_night = (maghrib + next_night_short / 2)
-            .duration_round(Duration::minutes(1))
-            .unwrap();
-        let last_third_of_night = (maghrib + next_night_short * 2 / 3)
-            .duration_round(Duration::minutes(1))
-            .unwrap();
+        let middle_of_night = maghrib + next_night_short / 2;
+        let last_third_of_night = maghrib + next_night_short * 2 / 3;
 
         Some(PrayerTimes {
             fajr,
@@ -126,16 +122,19 @@ impl PrayerTimes {
 
     /// Get time of tha prayer
     pub fn time_of(&self, prayer: Prayer) -> DateTime<Utc> {
+        use chrono::DurationRound;
+        let one_minute = Duration::minutes(1);
         match prayer {
-            Prayer::Fajr => self.fajr,
-            Prayer::Sunrise => self.sunrise,
-            Prayer::Dhuhr => self.dhuhr,
-            Prayer::Asr => self.asr,
-            Prayer::Maghrib => self.maghrib,
-            Prayer::Isha => self.isha,
-            Prayer::Qiyam => self.qiyam,
-            Prayer::FajrTomorrow => self.fajr_tomorrow,
+            Prayer::Fajr => self.fajr.duration_trunc(one_minute),
+            Prayer::Sunrise => self.sunrise.duration_trunc(one_minute),
+            Prayer::Dhuhr => self.dhuhr.duration_round(one_minute),
+            Prayer::Asr => self.asr.duration_round(one_minute),
+            Prayer::Maghrib => self.maghrib.duration_round(one_minute),
+            Prayer::Isha => self.isha.duration_round(one_minute),
+            Prayer::Qiyam => self.qiyam.duration_trunc(one_minute),
+            Prayer::FajrTomorrow => self.fajr_tomorrow.duration_trunc(one_minute),
         }
+        .unwrap()
     }
 
     /// Time remaining for the current prayer at given time
@@ -275,46 +274,28 @@ mod tests {
         // maghrib = 2016-01-31 22:43:00 UTC
         // isha    = 2016-02-01 00:05:00 UTC
         assert_eq!(
-            schedule
-                .time_of(Prayer::Fajr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "10:48 AM"
+            schedule.time_of(Prayer::Fajr),
+            Utc.ymd(2016, 1, 31).and_hms(10, 48, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Sunrise)
-                .format("%-l:%M %p")
-                .to_string(),
-            "12:16 PM"
+            schedule.time_of(Prayer::Sunrise),
+            Utc.ymd(2016, 1, 31).and_hms(12, 15, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Dhuhr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "5:33 PM"
+            schedule.time_of(Prayer::Dhuhr),
+            Utc.ymd(2016, 1, 31).and_hms(17, 33, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Asr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "8:20 PM"
+            schedule.time_of(Prayer::Asr),
+            Utc.ymd(2016, 1, 31).and_hms(20, 20, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Maghrib)
-                .format("%-l:%M %p")
-                .to_string(),
-            "10:43 PM"
+            schedule.time_of(Prayer::Maghrib),
+            Utc.ymd(2016, 1, 31).and_hms(22, 43, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Isha)
-                .format("%-l:%M %p")
-                .to_string(),
-            "12:05 AM"
+            schedule.time_of(Prayer::Isha),
+            Utc.ymd(2016, 2, 1).and_hms(0, 5, 0)
         );
     }
 
@@ -332,46 +313,28 @@ mod tests {
         // maghrib = 2016-01-01 14:25:00 UTC
         // isha    = 2016-01-01 16:02:00 UTC
         assert_eq!(
-            schedule
-                .time_of(Prayer::Fajr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "6:34 AM"
+            schedule.time_of(Prayer::Fajr),
+            Utc.ymd(2016, 1, 1).and_hms(6, 33, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Sunrise)
-                .format("%-l:%M %p")
-                .to_string(),
-            "8:19 AM"
+            schedule.time_of(Prayer::Sunrise),
+            Utc.ymd(2016, 1, 1).and_hms(8, 18, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Dhuhr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "11:25 AM"
+            schedule.time_of(Prayer::Dhuhr),
+            Utc.ymd(2016, 1, 1).and_hms(11, 25, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Asr)
-                .format("%-l:%M %p")
-                .to_string(),
-            "12:36 PM"
+            schedule.time_of(Prayer::Asr),
+            Utc.ymd(2016, 1, 1).and_hms(12, 36, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Maghrib)
-                .format("%-l:%M %p")
-                .to_string(),
-            "2:25 PM"
+            schedule.time_of(Prayer::Maghrib),
+            Utc.ymd(2016, 1, 1).and_hms(14, 25, 0)
         );
         assert_eq!(
-            schedule
-                .time_of(Prayer::Isha)
-                .format("%-l:%M %p")
-                .to_string(),
-            "4:02 PM"
+            schedule.time_of(Prayer::Isha),
+            Utc.ymd(2016, 1, 1).and_hms(16, 2, 0)
         );
     }
 }

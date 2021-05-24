@@ -221,21 +221,4 @@ mod tests {
 
         assert_abs_diff_eq!((angle_a + angle_b).degrees, 90.0)
     }
-
-    use chrono::{prelude::*, Duration, DurationRound};
-
-    #[test]
-    fn calculate_nearest_minute() {
-        let time_1 = Utc.ymd(2015, 7, 13).and_hms(4, 37, 30);
-        let time_2 = Utc.ymd(2015, 7, 13).and_hms(5, 59, 20);
-
-        assert_eq!(
-            time_1.duration_round(Duration::minutes(1)).unwrap(),
-            Utc.ymd(2015, 7, 13).and_hms(4, 38, 00)
-        );
-        assert_eq!(
-            time_2.duration_round(Duration::minutes(1)).unwrap(),
-            Utc.ymd(2015, 7, 13).and_hms(5, 59, 00)
-        );
-    }
 }
