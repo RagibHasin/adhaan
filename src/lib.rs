@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn calculate_prayer_times_raleigh_usa() {
         let local_date = NaiveDate::from_ymd(2015, 7, 12);
-        let params = Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
+        let params = Parameters::new(&prominent_methods::NorthAmerica);
         let coordinates = Coordinates::new(35.7750, -78.6336);
         let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
 
@@ -49,7 +49,7 @@ mod tests {
             Utc.ymd(2015, 7, 12).and_hms(17, 21, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Asr),
+            schedule.time_of(Prayer::AsrThaani),
             Utc.ymd(2015, 7, 12).and_hms(22, 22, 0),
         );
         assert_eq!(
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn calculate_prayer_times_rajshahi_bd() {
         let local_date = NaiveDate::from_ymd(2021, 5, 24);
-        let params = Parameters::new(&prominent_methods::Karachi, Madhhab::Hanafi);
+        let params = Parameters::new(&prominent_methods::Karachi);
         let coordinates = Coordinates::new(24.383144, 88.583183);
         let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
 
@@ -82,7 +82,7 @@ mod tests {
             Utc.ymd(2021, 5, 24).and_hms(6, 4, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Asr),
+            schedule.time_of(Prayer::AsrThaani),
             Utc.ymd(2021, 5, 24).and_hms(10, 43, 0),
         );
         assert_eq!(
@@ -99,7 +99,7 @@ mod tests {
     fn calculate_qiyam_times() {
         let date = NaiveDate::from_ymd(2015, 7, 12);
         // let qiyam_date  = NaiveDate::from_ymd(2015, 7, 13);
-        let params = Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
+        let params = Parameters::new(&prominent_methods::NorthAmerica);
         let coordinates = Coordinates::new(35.7750, -78.6336);
         let schedule = PrayerTimes::calculate(date, coordinates, params).unwrap();
 

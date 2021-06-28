@@ -36,24 +36,6 @@ pub enum HighLatitudeRule {
     TwilightAngle,
 }
 
-/// Setting for the Asr prayer time.
-/// For Hanafi madhhab, the Asr is bit later
-/// than that of the Shafi madhhab.
-#[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
-pub enum Madhhab {
-    /// Shafii
-    Shafii = 1,
-    /// Hanafi
-    Hanafi = 2,
-}
-
-impl Madhhab {
-    /// Shadow length for asr calculation in this method
-    pub fn shadow(self) -> i32 {
-        self as i32
-    }
-}
-
 /// Names of all obligatory prayers, sunrise, and Qiyam.
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
 pub enum Prayer {
@@ -63,8 +45,10 @@ pub enum Prayer {
     Sunrise,
     /// Dhuhr
     Dhuhr,
-    /// Asr
-    Asr,
+    /// Asr awwal
+    AsrAwwal,
+    /// Asr thaani
+    AsrThaani,
     /// Maghrib
     Maghrib,
     /// Isha
@@ -81,8 +65,8 @@ impl Prayer {
         match self {
             Prayer::Fajr => Some(Prayer::Sunrise),
             Prayer::Sunrise => Some(Prayer::Dhuhr),
-            Prayer::Dhuhr => Some(Prayer::Asr),
-            Prayer::Asr => Some(Prayer::Maghrib),
+            Prayer::Dhuhr => Some(Prayer::AsrAwwal),
+            Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Maghrib),
             Prayer::Maghrib => Some(Prayer::Isha),
             Prayer::Isha => Some(Prayer::Qiyam),
             _ => None,
@@ -94,30 +78,11 @@ impl Prayer {
         match self {
             Prayer::Sunrise => Some(Prayer::Fajr),
             Prayer::Dhuhr => Some(Prayer::Sunrise),
-            Prayer::Asr => Some(Prayer::Dhuhr),
-            Prayer::Maghrib => Some(Prayer::Asr),
+            Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Dhuhr),
+            Prayer::Maghrib => Some(Prayer::AsrThaani),
             Prayer::Isha => Some(Prayer::Maghrib),
             Prayer::Qiyam => Some(Prayer::Isha),
             _ => None,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn shafi_shadow() {
-        let shafi = Madhhab::Shafii;
-
-        assert_eq!(shafi.shadow(), 1);
-    }
-
-    #[test]
-    fn hanafi_shadow() {
-        let hanafi = Madhhab::Hanafi;
-
-        assert_eq!(hanafi.shadow(), 2);
     }
 }

@@ -185,6 +185,7 @@ pub fn corrected_transit(
     (approximate_transit + angle_delta.degrees) * 24.0
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn corrected_hour_angle(
     approximate_transit: f64,
     angle: Angle,

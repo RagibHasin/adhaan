@@ -15,8 +15,6 @@ pub struct Parameters {
     pub isha_angle: f64,
     /// Isha interval, if applicable
     pub isha_interval: Option<u8>,
-    /// Madhhab
-    pub madhhab: Madhhab,
     /// High latitude rule
     pub high_latitude_rule: HighLatitudeRule,
     /// User adjustments
@@ -27,14 +25,13 @@ pub struct Parameters {
 
 impl Parameters {
     /// Make a new set of parameters with calculation method and madhhab
-    pub fn new(method: &'static dyn Method, madhhab: Madhhab) -> Self {
+    pub fn new(method: &'static dyn Method) -> Self {
         let (fajr_angle, isha_angle) = method.angles();
         Parameters {
             fajr_angle,
             isha_angle,
             method,
             isha_interval: method.isha_interval(),
-            madhhab,
             high_latitude_rule: HighLatitudeRule::MiddleOfTheNight,
             user_adjustments: TimeAdjustment::default(),
             polar_circle_resolver: PolarCircleResolver::NearestCity,
@@ -81,7 +78,9 @@ impl Parameters {
             Prayer::Fajr => self.user_adjustments.fajr + self.method.adjustments().fajr,
             Prayer::Sunrise => self.user_adjustments.sunrise + self.method.adjustments().sunrise,
             Prayer::Dhuhr => self.user_adjustments.dhuhr + self.method.adjustments().dhuhr,
-            Prayer::Asr => self.user_adjustments.asr + self.method.adjustments().asr,
+            Prayer::AsrAwwal | Prayer::AsrThaani => {
+                self.user_adjustments.asr + self.method.adjustments().asr
+            }
             Prayer::Maghrib => self.user_adjustments.maghrib + self.method.adjustments().maghrib,
             Prayer::Isha => self.user_adjustments.isha + self.method.adjustments().isha,
             _ => 0,
@@ -94,7 +93,6 @@ impl PartialEq for Parameters {
         self.fajr_angle == other.fajr_angle
             && self.isha_angle == other.isha_angle
             && self.isha_interval == other.isha_interval
-            && self.madhhab == other.madhhab
             && self.high_latitude_rule == other.high_latitude_rule
             && self.user_adjustments == other.user_adjustments
             && self.method.adjustments() == other.method.adjustments()
