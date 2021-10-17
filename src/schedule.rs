@@ -146,12 +146,9 @@ impl PrayerTimes {
     /// Time remaining for the current prayer at given time
     pub fn time_remaining(&self, now: DateTime<Utc>) -> Option<Duration> {
         self.prayer_at(now)
-            .map(|prayer_now| {
-                prayer_now
-                    .next()
-                    .map(|prayer_next| self.time_of(prayer_next) - self.time_of(prayer_now))
-            })
+            .map(|prayer_now| prayer_now.next())
             .flatten()
+            .map(|prayer_next| self.time_of(prayer_next) - now)
     }
 
     /// Current prayer at given time in the date
