@@ -9,7 +9,7 @@ enum IshaOption {
 
 /// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/)
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct MethodInternal(IshaOption);
+pub struct MoonsightingCom(IshaOption);
 
 fn adjust(a: f64, b: f64, c: f64, d: f64, dyy: u32) -> f64 {
     match dyy {
@@ -74,7 +74,7 @@ fn days_since_solstice(date: NaiveDate, latitude: f64) -> u32 {
     .abs() as _
 }
 
-impl Method for MethodInternal {
+impl Method for MoonsightingCom {
     fn adjustments(&self) -> TimeAdjustment {
         TimeAdjustment {
             dhuhr: 5,
@@ -138,14 +138,14 @@ impl Method for MethodInternal {
 
 /// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
 #[allow(non_upper_case_globals)]
-pub static MoonsightingCommittee: MethodInternal = MethodInternal(IshaOption::Mixed);
+pub static MoonsightingCommittee: MoonsightingCom = MoonsightingCom(IshaOption::Mixed);
 
 /// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
 /// Isha ends when redness recedes (Shafaq Ahmar).
 #[allow(non_upper_case_globals)]
-pub static MoonsightingCommitteeRedIsha: MethodInternal = MethodInternal(IshaOption::Redness);
+pub static MoonsightingCommitteeRedIsha: MoonsightingCom = MoonsightingCom(IshaOption::Redness);
 
 /// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
 /// Isha ends when whiteness recedes (Shafaq Abyad).
 #[allow(non_upper_case_globals)]
-pub static MoonsightingCommitteeWhiteIsha: MethodInternal = MethodInternal(IshaOption::Whiteness);
+pub static MoonsightingCommitteeWhiteIsha: MoonsightingCom = MoonsightingCom(IshaOption::Whiteness);
