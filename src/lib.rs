@@ -9,7 +9,7 @@
 //!
 //! let new_york_city = Coordinates::new(40.7128, -74.0059);
 //! let date          = chrono::NaiveDate::from_ymd(2019, 1, 25);
-//! let params        = Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
+//! let params        = Parameters::new(&prominent_methods::NorthAmerica);
 //! let prayers       = PrayerTimes::calculate(date, new_york_city, params);
 //! ```
 
@@ -37,27 +37,27 @@ mod tests {
         let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
 
         assert_eq!(
-            schedule.time_of(Prayer::Fajr),
+            schedule.time_of(Prayer::Fajr).unwrap(),
             Utc.ymd(2015, 7, 12).and_hms(8, 42, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Sunrise),
+            schedule.time_of(Prayer::Sunrise).unwrap(),
             Utc.ymd(2015, 7, 12).and_hms(10, 7, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Dhuhr),
+            schedule.time_of(Prayer::Dhuhr).unwrap(),
             Utc.ymd(2015, 7, 12).and_hms(17, 21, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::AsrThaani),
+            schedule.time_of(Prayer::AsrThaani).unwrap(),
             Utc.ymd(2015, 7, 12).and_hms(22, 22, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Maghrib),
+            schedule.time_of(Prayer::Maghrib).unwrap(),
             Utc.ymd(2015, 7, 13).and_hms(0, 32, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Isha),
+            schedule.time_of(Prayer::Isha).unwrap(),
             Utc.ymd(2015, 7, 13).and_hms(1, 57, 0),
         );
     }
@@ -70,27 +70,27 @@ mod tests {
         let schedule = PrayerTimes::calculate(local_date, coordinates, params).unwrap();
 
         assert_eq!(
-            schedule.time_of(Prayer::Fajr),
+            schedule.time_of(Prayer::Fajr).unwrap(),
             Utc.ymd(2021, 5, 23).and_hms(21, 53, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Sunrise),
+            schedule.time_of(Prayer::Sunrise).unwrap(),
             Utc.ymd(2021, 5, 23).and_hms(23, 18, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Dhuhr),
+            schedule.time_of(Prayer::Dhuhr).unwrap(),
             Utc.ymd(2021, 5, 24).and_hms(6, 4, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::AsrThaani),
+            schedule.time_of(Prayer::AsrThaani).unwrap(),
             Utc.ymd(2021, 5, 24).and_hms(10, 43, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Maghrib),
+            schedule.time_of(Prayer::Maghrib).unwrap(),
             Utc.ymd(2021, 5, 24).and_hms(12, 46, 0),
         );
         assert_eq!(
-            schedule.time_of(Prayer::Isha),
+            schedule.time_of(Prayer::Isha).unwrap(),
             Utc.ymd(2021, 5, 24).and_hms(14, 12, 0),
         );
     }
@@ -108,7 +108,7 @@ mod tests {
         // Middle of Night: 2015-07-13T04:38:00Z
         // Last Third     : 2015-07-13T05:59:00Z
         assert_eq!(
-            schedule.time_of(Prayer::Qiyam),
+            schedule.time_of(Prayer::Qiyam).unwrap(),
             Utc.ymd(2015, 7, 13).and_hms(5, 59, 0)
         );
     }

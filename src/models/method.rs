@@ -231,93 +231,33 @@ mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
 
-    #[test]
-    fn parameters_for_muslim_world_league() {
-        let method = prominent_methods::MuslimWorldLeague;
+    macro_rules! check_parameters_for_method {
+        ($method:ident; $fajr_angle:literal , $isha_angle:expr, $isha_interval:expr) => {
+            paste::paste! {
+                #[test]
+                fn [< parameters_for_ $method:snake >]() {
+                    let method = prominent_methods::$method;
 
-        assert_abs_diff_eq!(method.angles().0, 18.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 17.0, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
+                    assert_abs_diff_eq!(method.angles().0, $fajr_angle, epsilon = 1e-10);
+                    if ($isha_angle as f64).is_nan() {
+                        assert!(method.angles().1.is_nan());
+                    } else {
+                        assert_abs_diff_eq!(method.angles().1, $isha_angle, epsilon = 1e-10);
+                    }
+                    assert_eq!(method.isha_interval(), $isha_interval);
+                }
+            }
+        };
     }
 
-    #[test]
-    fn parameters_for_egyptian() {
-        let method = prominent_methods::Egyptian;
-
-        assert_abs_diff_eq!(method.angles().0, 19.5, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 17.5, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_karachi() {
-        let method = prominent_methods::Karachi;
-
-        assert_abs_diff_eq!(method.angles().0, 18.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 18.0, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_umm_al_qura() {
-        let method = prominent_methods::UmmAlQura;
-
-        assert_abs_diff_eq!(method.angles().0, 18.5, epsilon = 1e-10);
-        assert!(method.angles().1.is_nan());
-        assert_eq!(method.isha_interval(), Some(90));
-    }
-
-    #[test]
-    fn parameters_for_dubai() {
-        let method = prominent_methods::Dubai;
-
-        assert_abs_diff_eq!(method.angles().0, 18.2, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 18.2, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_moonsighting_committee() {
-        let method = prominent_methods::MoonsightingCommittee;
-
-        assert_abs_diff_eq!(method.angles().0, 18.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 18.0, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_north_america() {
-        let method = prominent_methods::NorthAmerica;
-
-        assert_abs_diff_eq!(method.angles().0, 15.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 15.0, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_kuwait() {
-        let method = prominent_methods::Kuwait;
-
-        assert_abs_diff_eq!(method.angles().0, 18.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 17.5, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
-
-    #[test]
-    fn parameters_for_qatar() {
-        let method = prominent_methods::Qatar;
-
-        assert_abs_diff_eq!(method.angles().0, 18.0, epsilon = 1e-10);
-        assert!(method.angles().1.is_nan());
-        assert_eq!(method.isha_interval(), Some(90));
-    }
-
-    #[test]
-    fn parameters_for_singapore() {
-        let method = prominent_methods::Singapore;
-
-        assert_abs_diff_eq!(method.angles().0, 20.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(method.angles().1, 18.0, epsilon = 1e-10);
-        assert_eq!(method.isha_interval(), None);
-    }
+    check_parameters_for_method!(MuslimWorldLeague; 18.0, 17.0, None);
+    check_parameters_for_method!(Egyptian; 19.5, 17.5, None);
+    check_parameters_for_method!(Karachi; 18.0, 18.0, None);
+    check_parameters_for_method!(UmmAlQura; 18.5, f64::NAN, Some(90));
+    check_parameters_for_method!(Dubai; 18.2, 18.2, None);
+    check_parameters_for_method!(MoonsightingCommittee; 18.0, 18.0, None);
+    check_parameters_for_method!(NorthAmerica; 15.0, 15.0, None);
+    check_parameters_for_method!(Kuwait; 18.0, 17.5, None);
+    check_parameters_for_method!(Qatar; 18.0, f64::NAN, Some(90));
+    check_parameters_for_method!(Singapore; 20.0, 18.0, None);
 }

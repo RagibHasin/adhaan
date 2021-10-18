@@ -39,6 +39,10 @@ pub enum HighLatitudeRule {
 /// Names of all obligatory prayers, sunrise, and Qiyam.
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
 pub enum Prayer {
+    /// Anywhere yesterday
+    Yesterday,
+    /// Qiyam, yesterday
+    QiyamYesterday,
     /// Fajr
     Fajr,
     /// Sunrise
@@ -55,34 +59,34 @@ pub enum Prayer {
     Isha,
     /// Qiyam
     Qiyam,
-    /// Fajr, tomorrow
-    FajrTomorrow,
+    /// Anywhere tomorrow
+    Tomorrow,
 }
 
-impl Prayer {
-    /// The next prayer within date
-    pub fn next(self) -> Option<Prayer> {
-        match self {
-            Prayer::Fajr => Some(Prayer::Sunrise),
-            Prayer::Sunrise => Some(Prayer::Dhuhr),
-            Prayer::Dhuhr => Some(Prayer::AsrAwwal),
-            Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Maghrib),
-            Prayer::Maghrib => Some(Prayer::Isha),
-            Prayer::Isha => Some(Prayer::Qiyam),
-            _ => None,
-        }
-    }
+// impl Prayer {
+//     /// The next prayer within date
+//     pub fn next(self) -> Option<Prayer> {
+//         match self {
+//             Prayer::Fajr => Some(Prayer::Sunrise),
+//             Prayer::Sunrise => Some(Prayer::Dhuhr),
+//             Prayer::Dhuhr => Some(Prayer::AsrAwwal),
+//             Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Maghrib),
+//             Prayer::Maghrib => Some(Prayer::Isha),
+//             Prayer::Isha => Some(Prayer::Qiyam),
+//             _ => None,
+//         }
+//     }
 
-    /// The previous prayer within date
-    pub fn prev(self) -> Option<Prayer> {
-        match self {
-            Prayer::Sunrise => Some(Prayer::Fajr),
-            Prayer::Dhuhr => Some(Prayer::Sunrise),
-            Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Dhuhr),
-            Prayer::Maghrib => Some(Prayer::AsrThaani),
-            Prayer::Isha => Some(Prayer::Maghrib),
-            Prayer::Qiyam => Some(Prayer::Isha),
-            _ => None,
-        }
-    }
-}
+//     /// The previous prayer within date
+//     pub fn prev(self) -> Option<Prayer> {
+//         match self {
+//             Prayer::Sunrise => Some(Prayer::Fajr),
+//             Prayer::Dhuhr => Some(Prayer::Sunrise),
+//             Prayer::AsrAwwal | Prayer::AsrThaani => Some(Prayer::Dhuhr),
+//             Prayer::Maghrib => Some(Prayer::AsrThaani),
+//             Prayer::Isha => Some(Prayer::Maghrib),
+//             Prayer::Qiyam => Some(Prayer::Isha),
+//             _ => None,
+//         }
+//     }
+// }
