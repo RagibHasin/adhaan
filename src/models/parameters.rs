@@ -47,6 +47,14 @@ impl Parameters {
         }
     }
 
+    /// Make a new set of parameters with the given one and new adjustments
+    pub fn with_adjustments(self, adjustments: TimeAdjustment) -> Self {
+        Parameters {
+            user_adjustments: adjustments,
+            ..self
+        }
+    }
+
     /// Make a new set of parameters with the given one and new high latitude rules
     pub fn with_high_latitude_rule(self, rule: HighLatitudeRule) -> Self {
         Parameters {

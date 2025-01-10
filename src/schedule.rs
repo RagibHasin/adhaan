@@ -187,6 +187,11 @@ impl PrayerTimes {
             Prayer::Yesterday
         }
     }
+
+    /// Date of the prayer table
+    pub fn date(&self) -> NaiveDate {
+        self.date
+    }
 }
 
 #[cfg(test)]
