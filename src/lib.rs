@@ -160,3 +160,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod vendored_tests;
