@@ -1,24 +1,27 @@
-use chrono::{prelude::*, Duration};
+use jiff::{Zoned, civil::Date};
 
-use crate::astrolabe::{ops, unit::*};
+use crate::{
+    Coordinates,
+    astrolabe::{ops, unit::Angle},
+};
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct SolarCoordinates {
-    // The declination of the sun, the angle between
-    // the rays of the Sun and the plane of the Earth's equator.
+    /// The declination of the sun, the angle between the rays of the Sun and
+    /// the plane of the Earth's equator.
     declination: Angle,
 
-    // Right ascension of the Sun, the angular distance on the
-    // celestial equator from the vernal equinox to the hour circle.
+    /// Right ascension of the Sun, the angular distance on the celestial equator
+    /// from the vernal equinox to the hour circle.
     right_ascension: Angle,
 
-    // Apparent sidereal time, the hour angle of the vernal equinox.
+    /// Apparent sidereal time, the hour angle of the vernal equinox.
     apparent_sidereal_time: Angle,
 }
 
 impl SolarCoordinates {
-    fn new(julian_day: f64) -> Self {
-        let julian_century = ops::julian_century(julian_day);
+    fn new(date: Date) -> Self {
+        let julian_century = ops::julian_century_from_date(date);
         let mean_solar_longitude = ops::mean_solar_longitude(julian_century);
         let mean_lunar_longitude = ops::mean_lunar_longitude(julian_century);
         let ascending_lunar_node = ops::ascending_lunar_node_longitude(julian_century);
@@ -54,10 +57,10 @@ impl SolarCoordinates {
         .unwound();
 
         // Equation from Astronomical Algorithms page 88
-        let apparent_sidereal_time = Angle::new(
+        let apparent_sidereal_time = Angle::from_degrees(
             mean_sidereal_time.degrees
                 + ((nutation_longitude * 3600.0)
-                    * Angle::new(mean_obliq_ecliptic.degrees + nutation_obliq)
+                    * Angle::from_degrees(mean_obliq_ecliptic.degrees + nutation_obliq)
                         .radians()
                         .cos())
                     / 3600.0,
@@ -71,144 +74,175 @@ impl SolarCoordinates {
     }
 }
 
-// Solar Time
 #[derive(Debug, PartialEq, Clone)]
 pub struct SolarTime {
-    date: NaiveDate,
+    date: Date,
     observer: Coordinates,
-    solar: SolarCoordinates,
-    pub transit: DateTime<Utc>,
-    pub sunrise: DateTime<Utc>,
-    pub sunset: DateTime<Utc>,
-    prev_solar: SolarCoordinates,
-    next_solar: SolarCoordinates,
+    today: SolarCoordinates,
+    yesterday: SolarCoordinates,
+    tomorrow: SolarCoordinates,
     approx_transit: f64,
 }
 
 impl SolarTime {
-    pub fn new(date: NaiveDate, coordinates: Coordinates) -> Option<SolarTime> {
+    pub(crate) const HORIZON_ALTITUDE: Angle = Angle::from_degrees(-5. / 6.);
+
+    pub fn new(date: Date, coordinates: Coordinates) -> Result<SolarTime, Error> {
         // All calculation need to occur at 0h0m UTC
-        let solar = SolarCoordinates::new(ops::julian_day(date.and_hms(0, 0, 0)));
-        let prev_solar = SolarCoordinates::new(ops::julian_day(date.pred().and_hms(0, 0, 0)));
-        let next_solar = SolarCoordinates::new(ops::julian_day(date.succ().and_hms(0, 0, 0)));
-        let solar_altitude = Angle::new(-50.0 / 60.0);
+        let today = SolarCoordinates::new(date);
+        let yesterday = SolarCoordinates::new(date.yesterday().expect("sensible day"));
+        let tomorrow = SolarCoordinates::new(date.tomorrow().expect("sensible day"));
         let approx_transit = ops::approximate_transit(
             coordinates.longitude_angle(),
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-        );
-        let transit_time = ops::corrected_transit(
-            approx_transit,
-            coordinates.longitude_angle(),
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-            prev_solar.right_ascension,
-            next_solar.right_ascension,
-        );
-        let sunrise_time = ops::corrected_hour_angle(
-            approx_transit,
-            solar_altitude,
-            coordinates,
-            false,
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-            prev_solar.right_ascension,
-            next_solar.right_ascension,
-            solar.declination,
-            prev_solar.declination,
-            next_solar.declination,
-        );
-        let sunset_time = ops::corrected_hour_angle(
-            approx_transit,
-            solar_altitude,
-            coordinates,
-            true,
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-            prev_solar.right_ascension,
-            next_solar.right_ascension,
-            solar.declination,
-            prev_solar.declination,
-            next_solar.declination,
+            today.apparent_sidereal_time,
+            today.right_ascension,
         );
 
-        Some(SolarTime {
+        let solar_time = SolarTime {
             date,
             observer: coordinates,
-            solar,
-            transit: SolarTime::setting_hour(transit_time, date)?,
-            sunrise: SolarTime::setting_hour(sunrise_time, date)?,
-            sunset: SolarTime::setting_hour(sunset_time, date)?,
-            prev_solar,
-            next_solar,
+            today,
+            yesterday,
+            tomorrow,
             approx_transit,
-        })
+        };
+
+        if !solar_time
+            .corrected_hour_angle(SolarTime::HORIZON_ALTITUDE, false)
+            .is_normal()
+        {
+            Err(Error::SunWontRise)
+        } else if !solar_time
+            .corrected_hour_angle(SolarTime::HORIZON_ALTITUDE, true)
+            .is_normal()
+        {
+            Err(Error::SunWontSet)
+        } else {
+            Ok(solar_time)
+        }
     }
 
-    pub fn time_for_solar_angle(&self, angle: Angle, after_transit: bool) -> Option<DateTime<Utc>> {
-        let hours = ops::corrected_hour_angle(
-            self.approx_transit,
-            angle,
-            self.observer,
-            after_transit,
-            self.solar.apparent_sidereal_time,
-            self.solar.right_ascension,
-            self.prev_solar.right_ascension,
-            self.next_solar.right_ascension,
-            self.solar.declination,
-            self.prev_solar.declination,
-            self.next_solar.declination,
-        );
-
-        SolarTime::setting_hour(hours, self.date)
+    pub fn time_for_solar_angle(&self, angle: Angle, after_transit: bool) -> Option<Zoned> {
+        ops::time_for_hour_angle(self.corrected_hour_angle(angle, after_transit), self.date)
     }
 
-    pub fn afternoon(&self, shadow_length: f64) -> Option<DateTime<Utc>> {
-        let absolute_degrees = (self.observer.latitude - self.solar.declination.degrees).abs();
-        let tangent = Angle::new(absolute_degrees);
+    pub fn afternoon(&self, shadow_length: f64) -> Zoned {
+        let absolute_degrees = (self.observer.latitude - self.today.declination.degrees).abs();
+        let tangent = Angle::from_degrees(absolute_degrees);
         let inverse = shadow_length + tangent.radians().tan();
         let angle = Angle::from_radians((1.0 / inverse).atan());
 
         self.time_for_solar_angle(angle, true)
+            .expect("sun to reach the angle")
     }
 
-    fn setting_hour(value: f64, date: NaiveDate) -> Option<DateTime<Utc>> {
-        (value == 0.0 || value.is_normal()).then(|| {
-            Utc.from_utc_date(&date).and_hms(0, 0, 0)
-                + Duration::nanoseconds((value * 60.0 * 60.0 * 1e9).round() as _)
-        })
+    pub fn sunrise(&self) -> Zoned {
+        self.time_for_solar_angle(SolarTime::HORIZON_ALTITUDE, false)
+            .expect("sun to reach the angle")
     }
 
-    fn _setting_hour(value: f64, date: NaiveDate) -> Option<DateTime<Utc>> {
-        if !value.is_normal() {
-            return None;
-        }
-        let calculated_hours = value.floor();
-        let calculated_minutes = ((value - calculated_hours) * 60.0).floor();
-        let calculated_seconds =
-            ((value - (calculated_hours + calculated_minutes / 60.0)) * 60.0 * 60.0).floor();
+    pub fn sunset(&self) -> Zoned {
+        self.time_for_solar_angle(SolarTime::HORIZON_ALTITUDE, true)
+            .expect("sun to reach the angle")
+    }
 
-        // Adjust the hour to be within 0..=23,
-        // wrapping around as needed; otherwise
-        // chrono method will panic.
-        let (adjusted_hour, adjusted_date) = if calculated_hours < 0.0 {
-            ((calculated_hours + 24.0) as u32, date.pred())
-        } else if calculated_hours >= 24.0 {
-            ((calculated_hours - 24.0) as u32, date.succ())
+    pub fn transit(&self) -> Zoned {
+        ops::time_for_hour_angle(self.corrected_transit_hour_angle(), self.date)
+            .expect("sun to definitely reach the angle")
+    }
+
+    /// The time at which the sun is at its highest point in the sky (in universal time)
+    fn corrected_transit_hour_angle(&self) -> f64 {
+        let &Self {
+            observer,
+            today,
+            yesterday,
+            tomorrow,
+            approx_transit,
+            ..
+        } = self;
+
+        // Equation from page Astronomical Algorithms 102
+        let longitude_angle = -observer.longitude_angle();
+        let plane_angle = Angle::from_degrees(
+            today.apparent_sidereal_time.degrees + (360.985647 * approx_transit),
+        )
+        .unwound();
+        let interpolated_angles = ops::interpolate_angles(
+            today.right_ascension,
+            yesterday.right_ascension,
+            tomorrow.right_ascension,
+            approx_transit,
+        )
+        .unwound();
+        let angles = (plane_angle - longitude_angle - interpolated_angles).quadrant_shifted();
+        let angle_delta = angles / -360.;
+
+        (approx_transit + angle_delta.degrees) * 24.0
+    }
+
+    fn corrected_hour_angle(&self, angle: Angle, after_transit: bool) -> f64 {
+        let &Self {
+            observer,
+            today,
+            yesterday,
+            tomorrow,
+            approx_transit,
+            ..
+        } = self;
+
+        // Equation from page Astronomical Algorithms 102
+        let longitude_angle = -observer.longitude_angle();
+        let term1 = angle.radians().sin()
+            - (observer.latitude_angle().radians().sin() * today.declination.radians().sin());
+        let term2 = observer.latitude_angle().radians().cos() * today.declination.radians().cos();
+        let term_angle = Angle::from_radians((term1 / term2).acos());
+
+        let adjusted_approx_transit = if after_transit {
+            approx_transit + (term_angle.degrees / 360.0)
         } else {
-            (calculated_hours as u32, date)
+            approx_transit - (term_angle.degrees / 360.0)
         };
 
-        // Round to the nearest minute
-        let adjusted_mins = (calculated_minutes + calculated_seconds / 60.0).round() as u32;
-        let adjusted_secs: u32 = 0;
+        let plane_angle = Angle::from_degrees(
+            today.apparent_sidereal_time.degrees + (360.985647 * adjusted_approx_transit),
+        )
+        .unwound();
+        let interpolated_angles = ops::interpolate_angles(
+            today.right_ascension,
+            yesterday.right_ascension,
+            tomorrow.right_ascension,
+            adjusted_approx_transit,
+        )
+        .unwound();
+        let declination_angle = Angle::from_degrees(ops::interpolate(
+            today.declination.degrees,
+            yesterday.declination.degrees,
+            tomorrow.declination.degrees,
+            adjusted_approx_transit,
+        ));
+        let adjusted_angles = plane_angle - longitude_angle - interpolated_angles;
+        let celestial_body_altitude = ops::altitude_of_celestial_body(
+            observer.latitude_angle(),
+            declination_angle,
+            adjusted_angles,
+        );
+        let term3 = (celestial_body_altitude - angle).degrees;
+        let term4 = 360.0
+            * declination_angle.radians().cos()
+            * observer.latitude_angle().radians().cos()
+            * adjusted_angles.radians().sin();
+        let angle_delta = term3 / term4;
 
-        Some(Utc.from_utc_datetime(&adjusted_date.and_hms(
-            adjusted_hour,
-            adjusted_mins,
-            adjusted_secs,
-        )))
+        (adjusted_approx_transit + angle_delta) * 24.0
     }
+}
+
+/// Error that may arise when calculating solar times especially above critical latitudes in winter.
+#[derive(Debug)]
+pub enum Error {
+    SunWontRise,
+    SunWontSet,
 }
 
 #[cfg(test)]
@@ -217,11 +251,15 @@ mod tests {
     use super::*;
     use crate::astrolabe::ops;
     use approx::assert_abs_diff_eq;
+    use jiff::{
+        Unit,
+        civil::{date, datetime, time},
+        tz::TimeZone,
+    };
 
     #[test]
     fn solar_coordinates() {
-        let julian_day = ops::julian_day(NaiveDate::from_ymd(1992, 10, 13).and_hms(0, 0, 0));
-        let solar = SolarCoordinates::new(julian_day);
+        let solar = SolarCoordinates::new(date(1992, 10, 13));
 
         assert_abs_diff_eq!(
             solar.declination.degrees,
@@ -241,84 +279,78 @@ mod tests {
     }
 
     #[test]
-    fn zero_out_time_for_a_date() {
-        // Local date below is 2019-01-11T04:41:19Z in UTC
-        let utc_date = Utc.ymd(2019, 1, 11).and_hms(23, 41, 19);
-        let updated = Utc
-            .ymd(utc_date.year(), utc_date.month(), utc_date.day())
-            .and_hms(0, 0, 0);
-
-        assert_eq!(updated, Utc.ymd(2019, 1, 11).and_hms(0, 0, 0));
-    }
-
-    #[test]
     fn calculate_solar_time() {
-        let coordinates = Coordinates::new(35.0 + 47.0 / 60.0, -78.0 - 39.0 / 60.0);
-        let date = NaiveDate::from_ymd(2015, 7, 12);
+        let coordinates = {
+            let latitude = 35.0 + 47.0 / 60.0;
+            let longitude = -78.0 - 39.0 / 60.0;
+            Coordinates {
+                latitude,
+                longitude,
+            }
+        };
+        let date = date(2015, 7, 12);
         let solar = SolarTime::new(date, coordinates).unwrap();
-        let transit_date = Utc.ymd(2015, 7, 12).and_hms(17, 20, 14);
-        let sunrise_date = Utc.ymd(2015, 7, 12).and_hms(10, 7, 54);
-        let sunset_date = Utc.ymd(2015, 7, 13).and_hms(00, 32, 16);
 
-        assert_eq!(solar.transit.round_subsecs(0), transit_date);
-        assert_eq!(solar.sunrise.round_subsecs(0), sunrise_date);
-        assert_eq!(solar.sunset.round_subsecs(0), sunset_date);
+        let transit_calc = ops::time_for_hour_angle(solar.corrected_transit_hour_angle(), date)
+            .unwrap()
+            .round(Unit::Second)
+            .unwrap();
+        let sunrise_calc = solar
+            .time_for_solar_angle(SolarTime::HORIZON_ALTITUDE, false)
+            .unwrap()
+            .round(Unit::Second)
+            .unwrap();
+        let sunset_calc = solar
+            .time_for_solar_angle(SolarTime::HORIZON_ALTITUDE, true)
+            .unwrap()
+            .round(Unit::Second)
+            .unwrap();
+
+        let transit_fact = datetime(2015, 7, 12, 17, 20, 14, 0)
+            .to_zoned(TimeZone::UTC)
+            .unwrap();
+        let sunrise_fact = datetime(2015, 7, 12, 10, 7, 54, 0)
+            .to_zoned(TimeZone::UTC)
+            .unwrap();
+        let sunset_fact = datetime(2015, 7, 13, 0, 32, 16, 0)
+            .to_zoned(TimeZone::UTC)
+            .unwrap();
+
+        assert_eq!(transit_calc, transit_fact);
+        assert_eq!(sunrise_calc, sunrise_fact);
+        assert_eq!(sunset_calc, sunset_fact);
     }
 
     #[test]
     fn calculate_time_for_solar_angle() {
-        let coordinates = Coordinates::new(35.0 + 47.0 / 60.0, -78.0 - 39.0 / 60.0);
-        let date = NaiveDate::from_ymd(2015, 7, 12);
+        let coordinates = {
+            let latitude = 35.0 + 47.0 / 60.0;
+            let longitude = -78.0 - 39.0 / 60.0;
+            Coordinates {
+                latitude,
+                longitude,
+            }
+        };
+        let date = date(2015, 7, 12);
         let solar = SolarTime::new(date, coordinates).unwrap();
-        let angle = Angle::new(-6.0);
-        let twilight_start = solar.time_for_solar_angle(angle, false).unwrap();
-        let twilight_end = solar.time_for_solar_angle(angle, true).unwrap();
+        let angle = Angle::from_degrees(-6.0);
+        let twilight_start_calc = solar
+            .time_for_solar_angle(angle, false)
+            .unwrap()
+            .time()
+            .round(Unit::Second)
+            .unwrap();
+        let twilight_end_calc = solar
+            .time_for_solar_angle(angle, true)
+            .unwrap()
+            .time()
+            .round(Unit::Second)
+            .unwrap();
 
-        assert_eq!(
-            twilight_start.time().round_subsecs(0),
-            NaiveTime::from_hms(9, 38, 21)
-        );
-        assert_eq!(
-            twilight_end.time().round_subsecs(0),
-            NaiveTime::from_hms(1, 1, 46)
-        );
-    }
+        let twilight_start_fact = time(9, 38, 21, 0);
+        let twilight_end_fact = time(1, 1, 46, 0);
 
-    #[test]
-    fn calculate_corrected_hour_angle() {
-        let coordinates = Coordinates::new(35.0 + 47.0 / 60.0, -78.0 - 39.0 / 60.0);
-        let date = NaiveDate::from_ymd(2015, 7, 12);
-        let solar = SolarCoordinates::new(ops::julian_day(date.and_hms(0, 0, 0)));
-        let prev_solar = SolarCoordinates::new(ops::julian_day(date.pred().and_hms(0, 0, 0)));
-        let next_solar = SolarCoordinates::new(ops::julian_day(date.succ().and_hms(0, 0, 0)));
-        let solar_altitude = Angle::new(-50.0 / 60.0);
-        let approx_transit = ops::approximate_transit(
-            coordinates.longitude_angle(),
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-        );
-        let _transit_time = ops::corrected_transit(
-            approx_transit,
-            coordinates.longitude_angle(),
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-            prev_solar.right_ascension,
-            next_solar.right_ascension,
-        );
-        let sunrise_time = ops::corrected_hour_angle(
-            approx_transit,
-            solar_altitude,
-            coordinates,
-            false,
-            solar.apparent_sidereal_time,
-            solar.right_ascension,
-            prev_solar.right_ascension,
-            next_solar.right_ascension,
-            solar.declination,
-            prev_solar.declination,
-            next_solar.declination,
-        );
-
-        assert_abs_diff_eq!(sunrise_time, 10.131800480632849, epsilon = 1e-10);
+        assert_eq!(twilight_start_calc, twilight_start_fact);
+        assert_eq!(twilight_end_calc, twilight_end_fact);
     }
 }

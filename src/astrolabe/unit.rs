@@ -1,5 +1,4 @@
-use std::f64::consts::PI;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 pub(crate) trait Normalize {
     fn normalized_to_scale(&self, max: f64) -> f64;
@@ -17,17 +16,17 @@ pub struct Angle {
 }
 
 impl Angle {
-    pub fn new(value: f64) -> Self {
-        Angle { degrees: value }
+    pub const fn from_degrees(degrees: f64) -> Self {
+        Angle { degrees }
     }
 
-    pub fn from_radians(value: f64) -> Self {
+    pub const fn from_radians(radians: f64) -> Self {
         Angle {
-            degrees: (value * 180.0) / PI,
+            degrees: radians.to_degrees(),
         }
     }
 
-    pub fn radians(self) -> f64 {
+    pub const fn radians(self) -> f64 {
         self.degrees.to_radians()
     }
 
@@ -41,7 +40,7 @@ impl Angle {
         if self.degrees >= -180.0 && self.degrees <= 180.0 {
             self
         } else {
-            Angle::new(self.degrees - (360.0 * (self.degrees / 360.0).round()))
+            Angle::from_degrees(self.degrees - (360.0 * (self.degrees / 360.0).round()))
         }
     }
 }
@@ -66,59 +65,37 @@ impl Sub for Angle {
     }
 }
 
-impl Mul for Angle {
+impl Mul<f64> for Angle {
     type Output = Angle;
 
-    fn mul(self, rhs: Angle) -> Angle {
+    fn mul(self, rhs: f64) -> Angle {
         Angle {
-            degrees: self.degrees * rhs.degrees,
+            degrees: self.degrees * rhs,
         }
     }
 }
 
-impl Div for Angle {
+impl Div<f64> for Angle {
     type Output = Angle;
 
-    fn div(self, rhs: Angle) -> Angle {
-        if rhs.degrees == 0.0 {
+    fn div(self, rhs: f64) -> Angle {
+        if rhs == 0.0 {
             panic!("Cannot divide by zero.");
         }
 
         Angle {
-            degrees: self.degrees / rhs.degrees,
+            degrees: self.degrees / rhs,
         }
     }
 }
 
-/// The latitude and longitude associated with a location.
-/// Both latiude and longitude values are specified in degrees.
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct Coordinates {
-    /// Latitude
-    pub latitude: f64,
-    /// Longitude
-    pub longitude: f64,
-}
+impl Neg for Angle {
+    type Output = Angle;
 
-impl Coordinates {
-    /// Make new coordinates
-    pub fn new(latitude: f64, longitude: f64) -> Self {
-        Coordinates {
-            latitude,
-            longitude,
+    fn neg(self) -> Angle {
+        Angle {
+            degrees: -self.degrees,
         }
-    }
-}
-
-impl Coordinates {
-    /// Latitude as angle
-    pub fn latitude_angle(&self) -> Angle {
-        Angle::new(self.latitude)
-    }
-
-    /// Longitude as angle
-    pub fn longitude_angle(&self) -> Angle {
-        Angle::new(self.longitude)
     }
 }
 
@@ -136,8 +113,12 @@ mod tests {
 
     #[test]
     fn angle_conversion_degrees_to_radians() {
-        assert_abs_diff_eq!(Angle::new(180.0).radians(), PI, epsilon = 1e-10);
-        assert_abs_diff_eq!(Angle::new(90.0).radians(), PI / 2.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(Angle::from_degrees(180.0).radians(), PI, epsilon = 1e-10);
+        assert_abs_diff_eq!(
+            Angle::from_degrees(90.0).radians(),
+            PI / 2.0,
+            epsilon = 1e-10
+        );
     }
 
     #[test]
@@ -158,57 +139,77 @@ mod tests {
 
     #[test]
     fn angle_unwound() {
-        assert_abs_diff_eq!(Angle::new(-45.0).unwound().degrees, 315.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(Angle::new(361.0).unwound().degrees, 1.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(Angle::new(360.0).unwound().degrees, 0.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(Angle::new(259.0).unwound().degrees, 259.0, epsilon = 1e-10);
-        assert_abs_diff_eq!(Angle::new(2592.0).unwound().degrees, 72.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(
+            Angle::from_degrees(-45.0).unwound().degrees,
+            315.0,
+            epsilon = 1e-10
+        );
+        assert_abs_diff_eq!(
+            Angle::from_degrees(361.0).unwound().degrees,
+            1.0,
+            epsilon = 1e-10
+        );
+        assert_abs_diff_eq!(
+            Angle::from_degrees(360.0).unwound().degrees,
+            0.0,
+            epsilon = 1e-10
+        );
+        assert_abs_diff_eq!(
+            Angle::from_degrees(259.0).unwound().degrees,
+            259.0,
+            epsilon = 1e-10
+        );
+        assert_abs_diff_eq!(
+            Angle::from_degrees(2592.0).unwound().degrees,
+            72.0,
+            epsilon = 1e-10
+        );
     }
 
     #[test]
     fn closest_angle() {
         assert_abs_diff_eq!(
-            Angle::new(360.0).quadrant_shifted().degrees,
+            Angle::from_degrees(360.0).quadrant_shifted().degrees,
             0.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(361.0).quadrant_shifted().degrees,
+            Angle::from_degrees(361.0).quadrant_shifted().degrees,
             1.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(1.0).quadrant_shifted().degrees,
+            Angle::from_degrees(1.0).quadrant_shifted().degrees,
             1.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(-1.0).quadrant_shifted().degrees,
+            Angle::from_degrees(-1.0).quadrant_shifted().degrees,
             -1.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(-181.0).quadrant_shifted().degrees,
+            Angle::from_degrees(-181.0).quadrant_shifted().degrees,
             179.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(180.0).quadrant_shifted().degrees,
+            Angle::from_degrees(180.0).quadrant_shifted().degrees,
             180.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(359.0).quadrant_shifted().degrees,
+            Angle::from_degrees(359.0).quadrant_shifted().degrees,
             -1.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(-359.0).quadrant_shifted().degrees,
+            Angle::from_degrees(-359.0).quadrant_shifted().degrees,
             1.0,
             epsilon = 1e-10
         );
         assert_abs_diff_eq!(
-            Angle::new(1261.0).quadrant_shifted().degrees,
+            Angle::from_degrees(1261.0).quadrant_shifted().degrees,
             -179.0,
             epsilon = 1e-10
         );
@@ -216,8 +217,8 @@ mod tests {
 
     #[test]
     fn adding_angles() {
-        let angle_a = Angle::new(45.0);
-        let angle_b = Angle::new(45.0);
+        let angle_a = Angle::from_degrees(45.0);
+        let angle_b = Angle::from_degrees(45.0);
 
         assert_abs_diff_eq!((angle_a + angle_b).degrees, 90.0)
     }

@@ -1,10 +1,6 @@
 use super::*;
 
-/// Settings that are used for determining the
-/// the correct prayer time.
-///
-/// It is recommended to use [Configuration](struct.Configuration.html) to build
-/// the parameters that are need.
+/// Parameters for calculating prayer times.
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
     /// Calculation method
@@ -13,28 +9,30 @@ pub struct Parameters {
     pub fajr_angle: f64,
     /// Isha angle
     pub isha_angle: f64,
+    /// Maghrib angle
+    pub maghrib_angle: f64,
     /// Isha interval, if applicable
     pub isha_interval: Option<u8>,
     /// High latitude rule
     pub high_latitude_rule: HighLatitudeRule,
-    /// User adjustments
-    pub user_adjustments: TimeAdjustment,
     /// Polar circle resolution rule
     pub polar_circle_resolver: PolarCircleResolver,
+    /// User adjustments
+    pub user_adjustments: TimeAdjustment,
 }
 
 impl Parameters {
-    /// Make a new set of parameters with calculation method and madhhab
+    /// Make a new set of parameters with calculation method
     pub fn new(method: &'static dyn Method) -> Self {
-        let (fajr_angle, isha_angle) = method.angles();
         Parameters {
-            fajr_angle,
-            isha_angle,
             method,
+            fajr_angle: method.fajr_angle(),
+            isha_angle: method.isha_angle(),
+            maghrib_angle: method.maghrib_angle(),
             isha_interval: method.isha_interval(),
             high_latitude_rule: HighLatitudeRule::MiddleOfTheNight,
-            user_adjustments: TimeAdjustment::default(),
             polar_circle_resolver: PolarCircleResolver::NearestCity,
+            user_adjustments: TimeAdjustment::default(),
         }
     }
 
@@ -102,7 +100,8 @@ impl PartialEq for Parameters {
             && self.isha_angle == other.isha_angle
             && self.isha_interval == other.isha_interval
             && self.high_latitude_rule == other.high_latitude_rule
+            && self.polar_circle_resolver == other.polar_circle_resolver
             && self.user_adjustments == other.user_adjustments
-            && self.method.adjustments() == other.method.adjustments()
+            && std::ptr::eq(self.method, other.method)
     }
 }

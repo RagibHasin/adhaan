@@ -1,14 +1,24 @@
-use chrono::{prelude::*, Duration};
+use jiff::{SignedDuration, Zoned, civil::Date};
 
-use super::{Parameters, TimeAdjustment};
 use crate::{
+    Coordinates, Parameters, TimeAdjustment,
     astrolabe::{solar::SolarTime, unit::Angle},
-    Coordinates,
 };
 
+fn select_safe(
+    normal: Option<Zoned>,
+    safe: Zoned,
+    select: impl Fn(Zoned, Zoned) -> Zoned,
+) -> Zoned {
+    if let Some(normal) = normal {
+        select(normal, safe)
+    } else {
+        safe
+    }
+}
+
 /// Provide calculation method for fajr, isha and qiyam times.
-#[allow(unused_variables)]
-pub trait Method: std::fmt::Debug + std::panic::UnwindSafe + std::panic::RefUnwindSafe {
+pub trait Method: std::fmt::Debug {
     /// Method intrinstic time adjustments
     fn adjustments(&self) -> TimeAdjustment {
         TimeAdjustment {
@@ -17,64 +27,70 @@ pub trait Method: std::fmt::Debug + std::panic::UnwindSafe + std::panic::RefUnwi
         }
     }
 
-    /// Angles for fajr and isha calculation. Isha angle can be NaN for interval based calculation.
-    fn angles(&self) -> (f64, f64) {
-        (f64::NAN, f64::NAN)
+    /// Angle for fajr calculation.
+    fn fajr_angle(&self) -> f64 {
+        f64::NAN
+    }
+
+    /// Angle for isha calculation. Can be NaN for interval based calculation.
+    fn isha_angle(&self) -> f64 {
+        f64::NAN
+    }
+
+    /// Angle for maghrib calculation. Can be NaN for setting it to seunset.
+    fn maghrib_angle(&self) -> f64 {
+        f64::NAN
     }
 
     /// Interval between maghrib and isha, if applicable.
+    /// `isha_angle()` should return NaN if it returns `None`
     fn isha_interval(&self) -> Option<u8> {
         None
     }
 
     /// Calculate fajr time given all the parameters
+    #[expect(unused_variables, reason = "used in non-default impls")]
     fn calculate_fajr(
         &self,
         parameters: &Parameters,
         solar_time: &SolarTime,
-        night: Duration,
+        night: SignedDuration,
         coordinates: Coordinates,
-        date: NaiveDate,
-    ) -> DateTime<Utc> {
-        let fajr = solar_time.time_for_solar_angle(Angle::new(-parameters.fajr_angle), false);
-
-        let safe_fajr = solar_time.sunrise
-            - Duration::milliseconds(
-                (parameters.night_portions().0 * night.num_milliseconds() as f64) as _,
-            );
-
-        fajr.map_or(safe_fajr, |fajr| std::cmp::max(fajr, safe_fajr))
+        date: Date,
+    ) -> Zoned {
+        select_safe(
+            solar_time.time_for_solar_angle(Angle::from_degrees(-parameters.fajr_angle), false),
+            solar_time.sunrise() - night.mul_f64(parameters.night_portions().0),
+            Ord::max,
+        )
     }
 
     /// Calculate isha time given all the parameters
+    #[expect(unused_variables, reason = "used in non-default impls")]
     fn calculate_isha(
         &self,
         parameters: &Parameters,
         solar_time: &SolarTime,
-        night: Duration,
+        night: SignedDuration,
         coordinates: Coordinates,
-        date: NaiveDate,
-    ) -> DateTime<Utc> {
-        let isha = solar_time.time_for_solar_angle(Angle::new(-parameters.isha_angle), true);
-
-        let safe_isha = solar_time.sunset
-            + Duration::milliseconds(
-                (parameters.night_portions().1 * night.num_milliseconds() as f64) as _,
-            );
-
-        isha.map_or(safe_isha, |isha| std::cmp::min(isha, safe_isha))
+        date: Date,
+    ) -> Zoned {
+        select_safe(
+            solar_time.time_for_solar_angle(Angle::from_degrees(-parameters.isha_angle), true),
+            solar_time.sunset() + night.mul_f64(parameters.night_portions().1),
+            Ord::min,
+        )
     }
 }
 
 mod moonsighting_com;
 
 /// Prominent calculation methods
-#[allow(unused_variables)]
 pub mod prominent_methods {
     use super::*;
 
     pub use moonsighting_com::{
-        MoonsightingCommittee, MoonsightingCommitteeRedIsha, MoonsightingCommitteeWhiteIsha,
+        MOONSIGHTING_COMMITTEE, MOONSIGHTING_COMMITTEE_RED_ISHA, MOONSIGHTING_COMMITTEE_WHITE_ISHA,
     };
 
     /// Common calculation method
@@ -88,8 +104,12 @@ pub mod prominent_methods {
     pub struct MuslimWorldLeague;
 
     impl Method for MuslimWorldLeague {
-        fn angles(&self) -> (f64, f64) {
-            (18.0, 17.0)
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            17.0
         }
     }
 
@@ -98,8 +118,12 @@ pub mod prominent_methods {
     pub struct Egyptian;
 
     impl Method for Egyptian {
-        fn angles(&self) -> (f64, f64) {
-            (19.5, 17.5)
+        fn fajr_angle(&self) -> f64 {
+            19.5
+        }
+
+        fn isha_angle(&self) -> f64 {
+            17.5
         }
     }
 
@@ -108,8 +132,12 @@ pub mod prominent_methods {
     pub struct Karachi;
 
     impl Method for Karachi {
-        fn angles(&self) -> (f64, f64) {
-            (18.0, 18.0)
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            18.0
         }
     }
 
@@ -122,8 +150,12 @@ pub mod prominent_methods {
             Default::default()
         }
 
-        fn angles(&self) -> (f64, f64) {
-            (18.5, f64::NAN)
+        fn fajr_angle(&self) -> f64 {
+            18.5
+        }
+
+        fn isha_angle(&self) -> f64 {
+            f64::NAN
         }
 
         fn isha_interval(&self) -> Option<u8> {
@@ -134,11 +166,12 @@ pub mod prominent_methods {
             &self,
             parameters: &Parameters,
             solar_time: &SolarTime,
-            night: Duration,
-            coordinates: Coordinates,
-            prayer_date: NaiveDate,
-        ) -> DateTime<Utc> {
-            solar_time.sunset + Duration::minutes(parameters.isha_interval.unwrap_or(90) as _)
+            _: SignedDuration,
+            _: Coordinates,
+            _: Date,
+        ) -> Zoned {
+            solar_time.sunset()
+                + SignedDuration::from_mins(parameters.isha_interval.unwrap_or(90) as _)
         }
     }
 
@@ -157,8 +190,12 @@ pub mod prominent_methods {
             }
         }
 
-        fn angles(&self) -> (f64, f64) {
-            (18.2, 18.2)
+        fn fajr_angle(&self) -> f64 {
+            18.2
+        }
+
+        fn isha_angle(&self) -> f64 {
+            18.2
         }
     }
 
@@ -167,8 +204,12 @@ pub mod prominent_methods {
     pub struct NorthAmerica;
 
     impl Method for NorthAmerica {
-        fn angles(&self) -> (f64, f64) {
-            (15.0, 15.0)
+        fn fajr_angle(&self) -> f64 {
+            15.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            15.0
         }
     }
 
@@ -181,8 +222,12 @@ pub mod prominent_methods {
             Default::default()
         }
 
-        fn angles(&self) -> (f64, f64) {
-            (18.0, 17.5)
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            17.5
         }
     }
 
@@ -195,8 +240,12 @@ pub mod prominent_methods {
             Default::default()
         }
 
-        fn angles(&self) -> (f64, f64) {
-            (18.0, f64::NAN)
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            f64::NAN
         }
 
         fn isha_interval(&self) -> Option<u8> {
@@ -207,11 +256,57 @@ pub mod prominent_methods {
             &self,
             parameters: &Parameters,
             solar_time: &SolarTime,
-            night: Duration,
+            night: SignedDuration,
             coordinates: Coordinates,
-            prayer_date: NaiveDate,
-        ) -> DateTime<Utc> {
+            prayer_date: Date,
+        ) -> Zoned {
             UmmAlQura.calculate_isha(parameters, solar_time, night, coordinates, prayer_date)
+        }
+    }
+
+    /// Turkey
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Turkey;
+
+    impl Method for Turkey {
+        fn adjustments(&self) -> TimeAdjustment {
+            TimeAdjustment {
+                sunrise: -7,
+                dhuhr: 5,
+                asr: 4,
+                maghrib: 7,
+                ..Default::default()
+            }
+        }
+
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            17.0
+        }
+    }
+
+    /// Tehran
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Tehran;
+
+    impl Method for Tehran {
+        fn adjustments(&self) -> TimeAdjustment {
+            Default::default()
+        }
+
+        fn fajr_angle(&self) -> f64 {
+            17.7
+        }
+
+        fn isha_angle(&self) -> f64 {
+            14.0
+        }
+
+        fn maghrib_angle(&self) -> f64 {
+            4.5
         }
     }
 
@@ -220,44 +315,12 @@ pub mod prominent_methods {
     pub struct Singapore;
 
     impl Method for Singapore {
-        fn angles(&self) -> (f64, f64) {
-            (20.0, 18.0)
+        fn fajr_angle(&self) -> f64 {
+            20.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            18.0
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use approx::assert_abs_diff_eq;
-
-    macro_rules! check_parameters_for_method {
-        ($method:ident; $fajr_angle:literal , $isha_angle:expr, $isha_interval:expr) => {
-            paste::paste! {
-                #[test]
-                fn [< parameters_for_ $method:snake >]() {
-                    let method = prominent_methods::$method;
-
-                    assert_abs_diff_eq!(method.angles().0, $fajr_angle, epsilon = 1e-10);
-                    if ($isha_angle as f64).is_nan() {
-                        assert!(method.angles().1.is_nan());
-                    } else {
-                        assert_abs_diff_eq!(method.angles().1, $isha_angle, epsilon = 1e-10);
-                    }
-                    assert_eq!(method.isha_interval(), $isha_interval);
-                }
-            }
-        };
-    }
-
-    check_parameters_for_method!(MuslimWorldLeague; 18.0, 17.0, None);
-    check_parameters_for_method!(Egyptian; 19.5, 17.5, None);
-    check_parameters_for_method!(Karachi; 18.0, 18.0, None);
-    check_parameters_for_method!(UmmAlQura; 18.5, f64::NAN, Some(90));
-    check_parameters_for_method!(Dubai; 18.2, 18.2, None);
-    check_parameters_for_method!(MoonsightingCommittee; 18.0, 18.0, None);
-    check_parameters_for_method!(NorthAmerica; 15.0, 15.0, None);
-    check_parameters_for_method!(Kuwait; 18.0, 17.5, None);
-    check_parameters_for_method!(Qatar; 18.0, f64::NAN, Some(90));
-    check_parameters_for_method!(Singapore; 20.0, 18.0, None);
 }

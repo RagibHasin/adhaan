@@ -8,9 +8,9 @@ It is an attempt to make an ergonomic Rust port of the aforementioned library.
 ```rust
 use adhaan::*;
 let new_york_city = Coordinates::new(40.7128, -74.0059);
-let date          = chrono::NaiveDate::from_ymd(2019, 1, 25);
-let params        = Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
-let prayers       = PrayerTimes::calculate(date, new_york_city, params);
+let date= chrono::NaiveDate::from_ymd(2019, 1, 25);
+let params= Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
+let prayers= PrayerTimes::calculate(date, new_york_city, params);
 ```
 
 ## Acknowledgement
