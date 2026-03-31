@@ -64,7 +64,7 @@ fn resolve_for_nearest_day(
     forward: bool,
 ) -> Result<PolarCircleResolution, PolarCircleResolutionError> {
     if delta_days > 183 {
-        return Err(PolarCircleResolutionError::NearestDayWontWork);
+        return Err(PolarCircleResolutionError);
     }
 
     let test_date = date + Span::new().days(if forward { delta_days } else { -delta_days });
@@ -121,32 +121,11 @@ fn resolve_for_nearest_city(
                 latitude - LATITUDE_VARIATION_STEP.copysign(latitude),
             )
         } else {
-            Err(PolarCircleResolutionError::NearestCityWontWork)
+            Err(PolarCircleResolutionError)
         }
     }
 }
 
 /// Error that may arise when doing polar circle resolution.
 #[derive(Debug)]
-pub enum PolarCircleResolutionError {
-    /// The nearest day method of polar circle resolution won't work at the specified coordinates
-    /// on the specified date.
-    NearestDayWontWork,
-
-    /// The nearest city method of polar circle resolution won't work at the specified coordinates
-    /// on the specified date.
-    NearestCityWontWork,
-}
-
-impl std::error::Error for PolarCircleResolutionError {}
-
-impl std::fmt::Display for PolarCircleResolutionError {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fmt.write_str(match self {
-            Self::NearestDayWontWork => "nearest day method of polar circle resolution won't work",
-            Self::NearestCityWontWork => {
-                "nearest city method of polar circle resolution won't work"
-            }
-        })
-    }
-}
+pub struct PolarCircleResolutionError;
