@@ -5,16 +5,16 @@ use crate::{Coordinates, astrolabe::solar::SolarTime};
 /// Resolution rule for much higher latitudes.
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum PolarCircleResolver {
-    /// Resolve to nearest city with valid times
+    /// Resolve to nearest city with valid times.
     NearestCity,
-    /// Resolve to nearest day with valid times
+    /// Resolve to nearest day with valid times.
     NearestDay,
 }
 
 const LATITUDE_VARIATION_STEP: f64 = 0.5; // Degrees to add/remove at each resolution step
 const UNSAFE_LATITUDE: f64 = 65.0; // Based on https://en.wikipedia.org/wiki/Midnight_sun
 
-/// Result of a polar circle resolution
+/// Result of a polar circle resolution.
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) struct PolarCircleResolution {
     pub date: Date,
@@ -25,7 +25,7 @@ pub(crate) struct PolarCircleResolution {
 }
 
 impl PolarCircleResolver {
-    /// Resolve a polar circle problem
+    /// Resolves a polar circle problem.
     pub(crate) fn resolve(
         self,
         date: Date,
@@ -126,7 +126,7 @@ fn resolve_for_nearest_city(
     }
 }
 
-/// Error that may arise when doing polar circle resolution
+/// Error that may arise when doing polar circle resolution.
 #[derive(Debug)]
 pub enum PolarCircleResolutionError {
     /// The nearest day method of polar circle resolution won't work at the specified coordinates

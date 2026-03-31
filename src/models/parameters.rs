@@ -22,7 +22,7 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    /// Make a new set of parameters with calculation method
+    /// Makes a new set of parameters for the given calculation method.
     pub fn new(method: &'static dyn Method) -> Self {
         Parameters {
             method,
@@ -45,7 +45,7 @@ impl Parameters {
         }
     }
 
-    /// Make a new set of parameters with the given one and new adjustments
+    /// Sets time adjustments.
     pub fn with_adjustments(self, adjustments: TimeAdjustment) -> Self {
         Parameters {
             user_adjustments: adjustments,
@@ -53,7 +53,7 @@ impl Parameters {
         }
     }
 
-    /// Make a new set of parameters with the given one and new high latitude rules
+    /// Sets the rule for high latitude calculations.
     pub fn with_high_latitude_rule(self, rule: HighLatitudeRule) -> Self {
         Parameters {
             high_latitude_rule: rule,
@@ -61,15 +61,15 @@ impl Parameters {
         }
     }
 
-    /// Make a new set of parameters with the given one and new polar circle resolver
-    pub fn with_polar_circle_resolver(self, polar_circle_resolver: PolarCircleResolver) -> Self {
+    /// Sets the polar circle resolver.
+    pub fn with_polar_circle_resolver(self, resolver: PolarCircleResolver) -> Self {
         Parameters {
-            polar_circle_resolver,
+            polar_circle_resolver: resolver,
             ..self
         }
     }
 
-    /// Get night portions for fajr and isha
+    /// Returns night portions for Fajr and Isha.
     pub fn night_portions(&self) -> (f64, f64) {
         match self.high_latitude_rule {
             HighLatitudeRule::MiddleOfTheNight => (0.5, 0.5),
@@ -78,7 +78,7 @@ impl Parameters {
         }
     }
 
-    /// Get total time adjustment for a specific prayer
+    /// Returns the total time adjustment for a specific prayer.
     pub fn time_adjustments(&self, prayer: Prayer) -> i64 {
         match prayer {
             Prayer::Fajr => self.user_adjustments.fajr + self.method.adjustments().fajr,

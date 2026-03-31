@@ -1,5 +1,8 @@
-//! An Islamic prayer time implementation based on the [Adhan](https://github.com/batoulapps/Adhan)
+//! An Islamic prayer time calculator based on the [Adhan](https://github.com/batoulapps/Adhan)
 //! library by Batoul Apps.
+//!
+//! It is an attempt to make an ergonomic Rust port of the library from Batoul Apps, and attempts
+//! to be as unopinionated and flexible as possible.
 //!
 //! ## Example
 //!

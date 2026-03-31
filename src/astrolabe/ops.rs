@@ -57,8 +57,7 @@ pub fn solar_equation_of_the_center(julian_century: f64, mean_anomaly: Angle) ->
     Angle::from_degrees(term1 + term2 + term3)
 }
 
-// The apparent longitude of the Sun, referred to the
-// true equinox of the date.
+// The apparent longitude of the Sun, referred to the true equinox of the date.
 pub fn apparent_solar_longitude(julian_century: f64, mean_longitude: Angle) -> Angle {
     // Equation from Astronomical Algorithms page 164
     let longitude = mean_longitude
@@ -70,8 +69,7 @@ pub fn apparent_solar_longitude(julian_century: f64, mean_longitude: Angle) -> A
     lambda.unwound()
 }
 
-/// The mean obliquity of the ecliptic, formula
-/// adopted by the International Astronomical Union.
+/// The mean obliquity of the ecliptic, formula adopted by the International Astronomical Union.
 pub fn mean_obliquity_of_the_ecliptic(julian_century: f64) -> Angle {
     // Equation from Astronomical Algorithms page 147
     let term1 = 23.439291;
@@ -82,8 +80,7 @@ pub fn mean_obliquity_of_the_ecliptic(julian_century: f64) -> Angle {
     Angle::from_degrees(term1 - term2 - term3 + term4)
 }
 
-/// The mean obliquity of the ecliptic, corrected for
-/// calculating the apparent position of the sun.
+/// The mean obliquity of the ecliptic, corrected for calculating the apparent position of the sun.
 pub fn apparent_obliquity_of_the_ecliptic(
     julian_century: f64,
     mean_obliquity_of_the_ecliptic: Angle,
@@ -161,9 +158,8 @@ pub fn approximate_transit(longitude: Angle, sidereal_time: Angle, right_ascensi
         .normalized_to_scale(1.0)
 }
 
-/// Interpolation of a value given equidistant previous and
-/// next values and a factor equal to the fraction of the interpolated
-/// point's time over the time between values.
+/// Interpolation of a value given equidistant previous and next values and a factor equal to
+/// the fraction of the interpolated point's time over the time between values.
 pub fn interpolate(value: f64, previous_value: f64, next_value: f64, factor: f64) -> f64 {
     // Equation from Astronomical Algorithms page 24
     let a = value - previous_value;
@@ -190,7 +186,7 @@ pub fn interpolate_angles(
     )
 }
 
-/// Hour-angle must be finite.
+/// Gives the civil time for the given hour-angle. Returns `None` if hour-angle is not finite.
 pub fn time_for_hour_angle(hour_angle: f64, date: Date) -> Option<Zoned> {
     hour_angle.is_finite().then(|| {
         &date.to_zoned(TimeZone::UTC).unwrap()

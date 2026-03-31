@@ -1,24 +1,32 @@
 # `adhaan`
 
-An Islamic prayer time implementation based on the [Adhan](https://github.com/batoulapps/Adhan) library by Batoul Apps.
-It is an attempt to make an ergonomic Rust port of the aforementioned library.
+<!-- cargo-rdme start -->
 
-## Basic usage
+An Islamic prayer time calculator based on the [Adhan](https://github.com/batoulapps/Adhan)
+library by Batoul Apps.
+
+It is an attempt to make an ergonomic Rust port of the library from Batoul Apps, and attempts
+to be as unopinionated and flexible as possible.
+
+## Example
 
 ```rust
 use adhaan::*;
-let new_york_city = Coordinates::new(40.7128, -74.0059);
-let date= chrono::NaiveDate::from_ymd(2019, 1, 25);
-let params= Parameters::new(&prominent_methods::NorthAmerica, Madhhab::Hanafi);
-let prayers= PrayerTimes::calculate(date, new_york_city, params);
+
+let new_york_city = Coordinates { latitude: 40.7128, longitude: -74.0059 };
+let date = jiff::civil::date(2019, 1, 25);
+let params = Parameters::new(&prominent_methods::NorthAmerica);
+let prayers = PrayerTimes::calculate(date, new_york_city, params).unwrap();
 ```
+
+<!-- cargo-rdme end -->
 
 ## Acknowledgement
 
-This library is based on the port [salah](https://github.com/insha/salah) of the [Adhan](https://github.com/batoulapps/Adhan) library by Batoul Apps. All astronomical calculations are high precision equations directly from the book [Astronomical Algorithms](http://www.willbell.com/math/mc1.htm) by Jean Meeus.
+This library was started as a fork of the earlier port [`salah`](https://github.com/insha/salah) by Farhan Ahmed, which is still maintained but structured significantly differently.
+
+All astronomical calculations are high precision equations directly from the book [Astronomical Algorithms](http://www.willbell.com/math/mc1.htm) by Jean Meeus.
 
 ## License
 
-Adhaan is licensed under a three clause BSD License. It basically means: do whatever you want with it as long as the copyright in Salah sticks around, the conditions are not modified and the disclaimer is present. Furthermore you must not use the names of the authors to promote derivatives of the software without written consent.
-
-The full license text can be found in the `LICENSE` file.
+`adhaan` is licensed under the [MIT license](./LICENSE).

@@ -9,7 +9,7 @@ enum IshaOption {
     Whiteness,
 }
 
-/// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/)
+/// [Moonsighting Committee](https://www.moonsighting.com/)
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MoonsightingCom(IshaOption);
 
@@ -133,14 +133,16 @@ impl Method for MoonsightingCom {
     }
 }
 
-/// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
+/// [Moonsighting Committee](https://www.moonsighting.com/)
 pub static MOONSIGHTING_COMMITTEE: MoonsightingCom = MoonsightingCom(IshaOption::Mixed);
 
-/// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
+/// [Moonsighting Committee](https://www.moonsighting.com/)
+///
 /// Isha ends when redness recedes (Shafaq Ahmar).
 pub static MOONSIGHTING_COMMITTEE_RED_ISHA: MoonsightingCom = MoonsightingCom(IshaOption::Redness);
 
-/// Calculation method of [Moonsighting Committee](https://www.moonsighting.com/).
+/// [Moonsighting Committee](https://www.moonsighting.com/)
+///
 /// Isha ends when whiteness recedes (Shafaq Abyad).
 pub static MOONSIGHTING_COMMITTEE_WHITE_ISHA: MoonsightingCom =
     MoonsightingCom(IshaOption::Whiteness);

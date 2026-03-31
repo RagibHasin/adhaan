@@ -238,7 +238,6 @@ impl SolarTime {
     }
 }
 
-/// Error that may arise when calculating solar times especially above critical latitudes in winter.
 #[derive(Debug)]
 pub enum Error {
     SunWontRise,

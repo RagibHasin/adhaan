@@ -23,7 +23,11 @@ pub struct PrayerTimes {
 }
 
 impl PrayerTimes {
-    /// Calculate prayer times on a date, at a specific location with given parameters
+    /// Calculates prayer times.
+    ///
+    /// # Errors
+    ///
+    /// This function may error if polar circle resolution fails.
     pub fn calculate(
         date: Date,
         coordinates: Coordinates,
@@ -117,7 +121,7 @@ impl PrayerTimes {
         })
     }
 
-    /// Get time of the prayer
+    /// Returns time of the prayer.
     pub fn time_of(&self, prayer: Prayer) -> Zoned {
         use Prayer::*;
         use jiff::{RoundMode, Unit, ZonedRound};
@@ -146,7 +150,12 @@ impl PrayerTimes {
         }
     }
 
-    /// Current prayer at given time in the date
+    /// Returns the current prayer at given time in the date.
+    ///
+    /// # Errors
+    ///
+    /// This function errors if the queried time is outside of the day for which
+    /// this [`PrayerTimes`] has been calculated.
     pub fn prayer_at(&self, time: &Zoned) -> Result<Prayer, TimeOutsideOfDate> {
         if time >= self.fajr_tomorrow {
             Err(TimeOutsideOfDate::Tomorrow)

@@ -10,7 +10,7 @@ pub use polar_circle_resolution::{PolarCircleResolutionError, PolarCircleResolve
 
 /// Time adjustment for all prayer times.
 ///
-/// The value is specified in *minutes* and can be either positive or negative.
+/// The value is specified in minutes and can be either positive or negative.
 #[derive(Default, PartialEq, Eq, Debug, Copy, Clone)]
 #[expect(missing_docs, reason = "self-explanatory")]
 pub struct TimeAdjustment {
@@ -22,7 +22,7 @@ pub struct TimeAdjustment {
     pub isha: i64,
 }
 
-/// Rule for approximating Fajr and Isha at high latitudes
+/// Rule for approximating Fajr and Isha at high latitudes.
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
 #[expect(missing_docs, reason = "self-explanatory")]
 pub enum HighLatitudeRule {
@@ -68,7 +68,8 @@ pub enum Prayer {
     Qiyam,
 }
 
-/// Error that arises when .
+/// Error that arises when a query for current prayer is made with time outside of the day
+/// the schedule has been calculated for.
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
 #[expect(missing_docs, reason = "self-explanatory")]
 pub enum TimeOutsideOfDate {
