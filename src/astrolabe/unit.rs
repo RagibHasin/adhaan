@@ -79,8 +79,8 @@ impl Div<f64> for Angle {
     type Output = Angle;
 
     fn div(self, rhs: f64) -> Angle {
-        if rhs == 0.0 {
-            panic!("Cannot divide by zero.");
+        if rhs == 0.0 && cfg!(debug_assertions) {
+            panic!("cannot divide by zero.");
         }
 
         Angle {
