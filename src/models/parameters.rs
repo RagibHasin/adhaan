@@ -36,11 +36,20 @@ impl Parameters {
         }
     }
 
-    /// Make a new set of parameters with the given one and new angle values
-    pub fn with_angles(self, fajr_angle: f64, isha_angle: f64) -> Self {
+    /// Sets the Fajr angle.
+    pub fn with_fajr_angle(self, fajr_angle: f64) -> Self {
+        Parameters { fajr_angle, ..self }
+    }
+
+    /// Sets the Isha angle.
+    pub fn with_isha_angle(self, isha_angle: f64) -> Self {
+        Parameters { isha_angle, ..self }
+    }
+
+    /// Sets the Maghrib angle.
+    pub fn with_maghrib_angle(self, maghrib_angle: f64) -> Self {
         Parameters {
-            fajr_angle,
-            isha_angle,
+            maghrib_angle,
             ..self
         }
     }
