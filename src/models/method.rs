@@ -17,9 +17,9 @@ fn select_safe(
     }
 }
 
-/// Provide calculation method for fajr, isha and qiyam times.
+/// Provides calculation parameters.
 pub trait Method: std::fmt::Debug {
-    /// Method intrinstic time adjustments
+    /// Method intrinstic time adjustments.
     fn adjustments(&self) -> TimeAdjustment {
         TimeAdjustment {
             dhuhr: 1,
@@ -27,28 +27,29 @@ pub trait Method: std::fmt::Debug {
         }
     }
 
-    /// Angle for fajr calculation.
+    /// Angle for Fajr calculation.
     fn fajr_angle(&self) -> f64 {
         f64::NAN
     }
 
-    /// Angle for isha calculation. Can be NaN for interval based calculation.
+    /// Angle for Isha calculation. Can be NaN for interval based calculation.
     fn isha_angle(&self) -> f64 {
         f64::NAN
     }
 
-    /// Angle for maghrib calculation. Can be NaN for setting it to seunset.
+    /// Angle for Maghrib calculation. Can be NaN for setting it to sunset.
     fn maghrib_angle(&self) -> f64 {
         f64::NAN
     }
 
-    /// Interval between maghrib and isha, if applicable.
+    /// Interval between Maghrib and Isha, if applicable.
+    ///
     /// `isha_angle()` should return NaN if it returns `None`
     fn isha_interval(&self) -> Option<u8> {
         None
     }
 
-    /// Calculate fajr time given all the parameters
+    /// Calculates Fajr time
     #[expect(unused_variables, reason = "used in non-default impls")]
     fn calculate_fajr(
         &self,
@@ -65,7 +66,7 @@ pub trait Method: std::fmt::Debug {
         )
     }
 
-    /// Calculate isha time given all the parameters
+    /// Calculates Isha time
     #[expect(unused_variables, reason = "used in non-default impls")]
     fn calculate_isha(
         &self,
@@ -92,12 +93,6 @@ pub mod prominent_methods {
     pub use moonsighting_com::{
         MOONSIGHTING_COMMITTEE, MOONSIGHTING_COMMITTEE_RED_ISHA, MOONSIGHTING_COMMITTEE_WHITE_ISHA,
     };
-
-    /// Common calculation method
-    #[derive(Debug, PartialEq, Eq)]
-    pub struct Common;
-
-    impl Method for Common {}
 
     /// [Muslim World League](https://www.themwl.org/en)
     #[derive(Debug, PartialEq, Eq)]
@@ -199,38 +194,6 @@ pub mod prominent_methods {
         }
     }
 
-    /// ISNA
-    #[derive(Debug, PartialEq, Eq)]
-    pub struct NorthAmerica;
-
-    impl Method for NorthAmerica {
-        fn fajr_angle(&self) -> f64 {
-            15.0
-        }
-
-        fn isha_angle(&self) -> f64 {
-            15.0
-        }
-    }
-
-    /// Kuwait
-    #[derive(Debug, PartialEq, Eq)]
-    pub struct Kuwait;
-
-    impl Method for Kuwait {
-        fn adjustments(&self) -> TimeAdjustment {
-            Default::default()
-        }
-
-        fn fajr_angle(&self) -> f64 {
-            18.0
-        }
-
-        fn isha_angle(&self) -> f64 {
-            17.5
-        }
-    }
-
     /// Qatar
     #[derive(Debug, PartialEq, Eq)]
     pub struct Qatar;
@@ -264,7 +227,41 @@ pub mod prominent_methods {
         }
     }
 
+    /// Kuwait
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Kuwait;
+
+    impl Method for Kuwait {
+        fn adjustments(&self) -> TimeAdjustment {
+            Default::default()
+        }
+
+        fn fajr_angle(&self) -> f64 {
+            18.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            17.5
+        }
+    }
+
+    /// Singapore
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Singapore;
+
+    impl Method for Singapore {
+        fn fajr_angle(&self) -> f64 {
+            20.0
+        }
+
+        fn isha_angle(&self) -> f64 {
+            18.0
+        }
+    }
+
     /// Turkey
+    ///
+    /// Approximate of Diyanet method
     #[derive(Debug, PartialEq, Eq)]
     pub struct Turkey;
 
@@ -288,7 +285,7 @@ pub mod prominent_methods {
         }
     }
 
-    /// Tehran
+    /// Institute of Geophysics, University of Tehran
     #[derive(Debug, PartialEq, Eq)]
     pub struct Tehran;
 
@@ -310,17 +307,17 @@ pub mod prominent_methods {
         }
     }
 
-    /// Singapore
+    /// ISNA
     #[derive(Debug, PartialEq, Eq)]
-    pub struct Singapore;
+    pub struct NorthAmerica;
 
-    impl Method for Singapore {
+    impl Method for NorthAmerica {
         fn fajr_angle(&self) -> f64 {
-            20.0
+            15.0
         }
 
         fn isha_angle(&self) -> f64 {
-            18.0
+            15.0
         }
     }
 }
